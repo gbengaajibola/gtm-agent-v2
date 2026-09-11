@@ -1,0 +1,81 @@
+name: LearnToEarn Weekly Showcase
+
+"on":
+  schedule:
+    # Main weekly run — Fridays 09:00 UTC. Adjust to your actual reset day/time.
+    - cron: "0 9 * * 5"
+    # Pending-review sweep (reminders + timeouts) — every 6 hours.
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "What to run"
+        required: true
+        default: "run_weekly"
+        type: choice
+        options:
+          - run_weekly
+          - check_pending
+          - approve
+      run_id:
+        description: "Run ID (only needed for 'approve', e.g. 2026-W37)"
+        required: false
+      decision:
+        description: "approve or reject (only needed for 'approve')"
+        required: false
+        type: choice
+        options:
+          - approve
+          - reject
+
+permissions:
+  contents: write # needed to commit roster snapshots / ledger / pending files back to the repo
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      DISCORD_REVIEW_CHANNEL_ID: ${{ secrets.DISCORD_REVIEW_CHANNEL_ID }}
+      DISCORD_PUBLIC_CHANNEL_ID: ${{ secrets.DISCORD_PUBLIC_CHANNEL_ID }}
+      AGENTROUTER_API_KEY: ${{ secrets.AGENTROUTER_API_KEY }}
+      AGENTROUTER_MODEL: ${{ secrets.AGENTROUTER_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Configure git identity for auto-commits
+        run: |
+          git config user.name "l2e-showcase-bot"
+          git config user.email "actions@users.noreply.github.com"
+
+      # Scheduled: run the main weekly pipeline (Stages 1-4 + open gate)
+      - name: Run weekly pipeline
+        if: github.event_name == 'schedule' && github.event.schedule == '0 9 * * 5'
+        run: python run_weekly.py
+
+      # Scheduled: sweep pending reviews for reminders/timeouts
+      - name: Check pending reviews
+        if: github.event_name == 'schedule' && github.event.schedule == '0 */6 * * *'
+        run: python check_pending.py
+
+      # Manual dispatch
+      - name: Manual - run weekly pipeline
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'run_weekly'
+        run: python run_weekly.py
+
+      - name: Manual - check pending
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'check_pending'
+        run: python check_pending.py
+
+      - name: Manual - approve/reject
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'approve'
+        run: python approve_run.py "${{ github.event.inputs.run_id }}" "${{ github.event.inputs.decision }}"
