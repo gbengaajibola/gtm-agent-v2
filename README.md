@@ -1,99 +1,61 @@
-# LearnToEarn Weekly Showcase — Runnable v2
+# GTM Agent v2
 
-Implements `ARCHITECTURE_v2.md` end to end. Read `GATE_DESIGN.md` for
-exactly how approval works — it finalizes and slightly supersedes what
-`ARCHITECTURE_v2.md` Section 6e originally assumed.
+Every week, a handful of cool projects get built inside the [LearnToEarn Fellowship](https://l2e.lovable.app) — an AI-native engineering fellowship. Somebody has to tell everyone else about them. This is the robot that does that job.
 
-## What's real vs. stubbed
+It's a small assistant that runs on its own every Friday. It visits the fellowship's leaderboard site, picks out the projects worth talking about that week, writes a short message about each one (the way a friend would, not the way a press release would), and sends a draft to a private channel for a quick human look. One click of approval later, the message goes out to the community on Discord — with a WhatsApp version saved for copy-pasting, since WhatsApp has no way for robots to post directly.
 
-- **Real and tested:** Stage 1 extraction selectors (validated against a
-  real captured page — see the architecture delivery's
-  `validate_selectors.py`), the ledger/selection logic, the gate/reminder/
-  timeout flow, git versioning.
-- **Real but not yet run live:** the actual Playwright browser automation
-  (Stage 1 and Stage 2) — couldn't be executed against the live site from
-  the sandbox this was built in due to a network allowlist restriction.
-  Structurally correct, needs a real first run to confirm.
-- **Intentionally stubbed:** Browser-Use escalation in `lib/capture.py`
-  (see the docstring there for why) — a project whose plain-Playwright
-  capture comes back blank just proceeds without a captured visual detail
-  rather than blocking the run.
+Nobody on the team spends their Friday writing community updates anymore.
 
-## One-time setup
+## Why it's built this way
 
-1. **Install dependencies and the browser binary:**
+**A human always gets the last word.** The robot never posts anything straight to the public channel. It writes the draft, drops it in a private review channel, and waits. If nobody says yes or no within 3 days, it quietly gives up and nothing gets posted. No surprises, no embarrassing posts at 2am.
+
+**No project gets featured twice "for no reason."** The robot keeps a little memory — a history of everything it's ever featured. New projects always get first dibs. Once everyone's had a turn, it switches to highlighting the ones that gained the most ground that week. And each project only gets one "most improved" moment ever, so the same thing can't keep coming back.
+
+**It never makes things up.** The writing brain is only allowed to use facts from the leaderboard and the projects' own pages. No invented numbers, no fake testimonials, no made-up deadlines. If it can't find enough to say about a project, it says less rather than making something up.
+
+**Everything it does is written down.** Every pick, every draft, every decision is saved and time-stamped in the repo, so you can always look back and see exactly what happened and why.
+
+## What's in the box
+
+| File | What it does |
+|---|---|
+| `run_weekly.py` | The main weekly run — gathers projects, writes the drafts, asks for approval |
+| `approve_run.py` | The "yes" or "no" button (run it yourself, or approve from GitHub's UI) |
+| `check_pending.py` | The nag — reminds you if a draft is waiting too long, cancels it after 3 days |
+| `lib/` | The robot's brain: reading the leaderboard, visiting projects, writing, posting, remembering |
+| `assets/system_prompt.txt` | Its "personality" — how the weekly message should sound. Edit this file to change the tone, no coding needed |
+| `.github/workflows/weekly_showcase.yml` | The alarm clock — runs everything automatically on GitHub, every Friday |
+
+## Want to run your own?
+
+You'll need Python, a Discord server you control, and an API key for the AI that does the writing ([AgentRouter](https://agentrouter.org/console/token)).
+
+1. **Get the code and install what it needs:**
    ```
    pip install -r requirements.txt
    python setup_check.py
    ```
-   `setup_check.py` installs what it can and warns (without failing) about
-   anything that needs a human, like secrets.
+   The setup check tells you plainly what's missing — it won't fail just because you're not done yet.
 
-2. **Create the Discord bot** (used for both the review channel and the
-   public channel — see `lib/discord_bot.py`'s docstring for the exact
-   click-path): make an Application at discord.com/developers/applications,
-   add a Bot, copy its token, invite it to your server with "Send Messages"
-   permission, then copy both channel IDs (Developer Mode → right-click a
-   channel → Copy Channel ID).
+2. **Copy `.env.example` to `.env`** and fill in your four keys: the Discord bot token, your two channel IDs (one private for review, one public for posting), and the AgentRouter key.
 
-3. **Copy `.env.example` to `.env`** and fill in:
-   - `DISCORD_BOT_TOKEN`, `DISCORD_REVIEW_CHANNEL_ID`, `DISCORD_PUBLIC_CHANNEL_ID`
-   - `AGENTROUTER_API_KEY` (Stage 4 uses AgentRouter's OpenAI-compatible API,
-     default model `glm-5.3` — override with `AGENTROUTER_MODEL` if needed)
-   - `WEEKLY_RESET_DAY` (used honestly in the copy's closing line)
+3. **Try one run:**
+   ```
+   python run_weekly.py
+   ```
+   A draft appears in your review channel. Read it. If you like it:
+   ```
+   python approve_run.py 2026-W38 approve
+   ```
+   (use whatever run ID it printed — one per week). If you don't like it, say `reject` and nothing gets posted.
 
-4. **If using GitHub Actions:** add the same four values as repo secrets
-   (Settings → Secrets and variables → Actions), and make sure Actions has
-   write permission to the repo (Settings → Actions → General → Workflow
-   permissions → "Read and write permissions") so it can commit snapshots
-   back.
+4. **Let it run itself.** Add the same four keys as secrets on GitHub (Settings → Secrets and variables → Actions), and switch on "Read and write permissions" under Settings → Actions → General. From then on, GitHub runs it every Friday morning, and you can approve or reject drafts right from the GitHub app on your phone.
 
-## Running it locally
+## The honest state of things
 
-```
-python run_weekly.py
-```
+- The weekly schedule works, the writing works, the approval flow works.
+- One situation is handled a bit bluntly: some project sites can't be read automatically (fancy splash screens and the like). The robot just writes around it using the project's own description instead. It works, it's just less clever than it could be.
+- It posts to Discord and writes WhatsApp drafts. LinkedIn and X versions don't exist yet.
 
-This runs Stages 1–4, posts the draft to your private review channel, and
-stops. Then:
-
-```
-python approve_run.py <run_id> approve
-# or
-python approve_run.py <run_id> reject
-```
-
-The `run_id` is printed by `run_weekly.py` (an ISO week tag like
-`2026-W37`) and is also the filename in `pending_review/`.
-
-To test the reminder/timeout sweep without waiting real hours, temporarily
-lower `REMINDER_AFTER_HOURS` / `TIMEOUT_AFTER_HOURS` in `config.py`, then
-run:
-
-```
-python check_pending.py
-```
-
-## Files
-
-| File | Stage |
-|---|---|
-| `run_weekly.py` | 0–4, opens the gate |
-| `lib/extractor.py` | 1 |
-| `lib/ledger.py` | 1b, 1c, 7 |
-| `lib/capture.py` | 2 |
-| `lib/copywriter.py` | 4 |
-| `assets/system_prompt.txt` | 4 (the actual prompt text, editable without touching code) |
-| `approve_run.py` | 5 (the gate itself), 6, 7 |
-| `check_pending.py` | 5 (reminder/timeout sweep) |
-| `lib/discord_bot.py` | 5, 6 |
-| `lib/git_ops.py` | 7 (and every other state-writing step) |
-| `.github/workflows/weekly_showcase.yml` | 0 (scheduling) |
-
-## Known gaps for v3 (see ARCHITECTURE_v2.md Section 9 too)
-
-- Browser-Use escalation is a stub — wire it in once real runs show how
-  often it's actually needed.
-- LinkedIn / Twitter-X versions of Stage 4 — deliberately not built yet.
-- This hasn't had a real live run against the actual site yet — treat the
-  first run as a test, not a trusted unattended run.
+Questions or ideas? Open an issue — happy to hear them.
