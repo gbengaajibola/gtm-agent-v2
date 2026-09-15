@@ -14,6 +14,10 @@ python check_pending.py           # reminder/timeout sweep of pending_review/
 
 There is no test suite. Verification = `python setup_check.py` plus a manual `run_weekly.py` run.
 
+## Autonomous loop
+
+To run the whole cycle end to end in auto mode (preflight → sweep → produce → review → decide → verify, with subagent call map), follow `WORKFLOW_LOOP.md`. It is written env-agnostically so any agent (OpenCode, Claude, Cursor, Copilot, …) can execute it. Approval policy lives there: `AUTO_APPROVE` is on by default — a human owns the gate unless the operator explicitly enables it.
+
 ## How the pipeline works (easy to get wrong)
 
 - `run_weekly.py` deliberately stops after posting a draft to the private Discord review channel and writing `pending_review/<run_id>.json`. Nothing public is posted and the ledger is untouched until a human runs `approve_run.py`. Stage 4 LLM failure exits 1 before the gate — nothing is posted. See `GATE_DESIGN.md` (it finalizes/supersedes ARCHITECTURE_v2.md §6e; ARCHITECTURE_v2.md itself is not in this repo).
@@ -52,3 +56,7 @@ Every session must leave this file smarter, so the same mistakes are never made 
 - `lib/copywriter.py`'s only contract is `generate_drafts() -> {"whatsapp", "discord"}` with raw-text fallback for non-JSON — verify provider swaps with mocked `requests.post` (JSON round-trip, header/payload shape, missing-key error), not live calls. See `CHANGELOG.md` for the eval checklist.
 - If the first live Stage 4 run returns drafts wrapped in prose instead of JSON (GLM can be chatty), harden the JSON parse in `lib/copywriter.py` — don't touch the gate or anything else.
 - `setup_check.py` pip-install fails on externally-managed Python envs — use a venv; unrelated to provider config.
+
+**2026-09-15 — AgentRouter 401 / setup_check venv gotcha**
+- `setup_check.py`'s browser check (line 45) shells out to the bare `playwright` executable and runs *before* the secrets check, so it must be run as `PATH=.venv/bin:$PATH .venv/bin/python setup_check.py` — otherwise it dies with `FileNotFoundError` before printing anything useful.
+- A Stage 4 `401 {"message":"UNAUTHENTICATED","type":"unauthorized_client_error"}` ("unauthorized client detected") is a key/account problem, not a code bug: don't touch `lib/copywriter.py` or the base URL and don't retry — the operator must rotate/refresh `AGENTROUTER_API_KEY`. Nothing is posted and no `pending_review/` gate file is written. (2026-09-15 subagent audit: the `.env` key parses clean — 51 chars, `sk-` prefix, no whitespace/quotes/BOM, byte-exact vs file — so don't re-audit `.env` formatting on this error; mocked-`requests.post` tests of `generate_drafts()` all pass, the code path is fine.)
