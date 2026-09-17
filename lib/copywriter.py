@@ -6,7 +6,7 @@ Nothing upstream or downstream cares which provider answers, only that
 generate_drafts() returns {"whatsapp": str, "discord": str}.
 """
 import json
-import requests
+from openai import OpenAI
 import config
 
 
@@ -33,25 +33,20 @@ def _call_agentrouter(system_prompt: str, user_message: str) -> str:
     if not config.AGENTROUTER_API_KEY:
         raise RuntimeError("AGENTROUTER_API_KEY is not set — see .env.example")
 
-    resp = requests.post(
-        f"{config.AGENTROUTER_BASE_URL.rstrip('/')}/chat/completions",
-        headers={
-            "Authorization": f"Bearer {config.AGENTROUTER_API_KEY}",
-            "content-type": "application/json",
-        },
-        json={
-            "model": config.AGENTROUTER_MODEL,
-            "max_tokens": 1000,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message},
-            ],
-        },
+    client = OpenAI(
+        api_key=config.AGENTROUTER_API_KEY,
+        base_url=config.AGENTROUTER_BASE_URL,
+    )
+    resp = client.chat.completions.create(
+        model=config.AGENTROUTER_MODEL,
+        max_tokens=1000,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ],
         timeout=60,
     )
-    resp.raise_for_status()
-    data = resp.json()
-    return data["choices"][0]["message"]["content"]
+    return resp.choices[0].message.content
 
 
 def generate_drafts(feature_set: list[dict], run_mode: str) -> dict:

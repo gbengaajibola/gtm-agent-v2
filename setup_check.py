@@ -23,7 +23,7 @@ def check_python_version():
 
 
 def check_and_install_packages():
-    required = ["playwright", "requests", "dotenv"]
+    required = ["playwright", "requests", "dotenv", "openai"]
     missing = [pkg for pkg in required if importlib.util.find_spec(pkg) is None]
     if not missing:
         print("[OK] All required Python packages already installed.")
