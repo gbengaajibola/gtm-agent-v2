@@ -6,8 +6,14 @@ Nothing upstream or downstream cares which provider answers, only that
 generate_drafts() returns {"whatsapp": str, "discord": str}.
 """
 import json
+import uuid
 from openai import OpenAI
 import config
+
+# Stable session id for this process so OpenCode Go can route/cache.
+# Go requires `x-opencode-session` (see https://opencode.ai/docs/go/#where-can-i-use-it).
+_SESSION_ID = f"l2e-weekly-showcase-{uuid.uuid4()}"
+_USER_AGENT = "l2e-weekly-showcase/1.0"
 
 
 def _build_user_message(selection: list[dict], run_mode: str) -> str:
@@ -45,6 +51,10 @@ def _call_opencode_go(system_prompt: str, user_message: str) -> str:
             {"role": "user", "content": user_message},
         ],
         timeout=60,
+        extra_headers={
+            "x-opencode-session": _SESSION_ID,
+            "User-Agent": _USER_AGENT,
+        },
     )
     return resp.choices[0].message.content
 

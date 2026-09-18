@@ -6,5 +6,5 @@ output/*.png
 # Local review copies — spike plan/eval, never pushed
 PLAN_STAGE4_OPENAI_SDK.md
 EVAL_STAGE4_OPENAI_SDK.md
-.opencode
-opecode.json
+# NOTE: .opencode/ (subagent routing) and opencode.json are intentionally
+# TRACKED — every clone needs them for @planner/@executor/@evaluator to load.

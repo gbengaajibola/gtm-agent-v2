@@ -27,6 +27,7 @@ To run the whole cycle end to end in auto mode (preflight → sweep → produce 
 - Secrets come from `.env` (never committed; see `.env.example`): `DISCORD_BOT_TOKEN`, `DISCORD_REVIEW_CHANNEL_ID`, `DISCORD_PUBLIC_CHANNEL_ID`, `OPENCODE_GO_API_KEY` (Stage 4; model via `OPENCODE_GO_MODEL`, default `glm-5.3-flash`).
 - Approve posts the Discord draft to the public channel and saves the WhatsApp draft to `processed/<run_id>_whatsapp_draft.txt` for manual paste — there is no WhatsApp send API, don't add one.
 - To test the reminder/timeout flow without waiting real hours, temporarily lower `REMINDER_AFTER_HOURS` / `TIMEOUT_AFTER_HOURS` in `config.py`, then run `check_pending.py`.
+- Subagent routing: `.opencode/SUBAGENT_ROUTING.md` is the delegation protocol (`@planner` → `@executor` → `@evaluator`, models, fallback sentinels) and `opencode.json` loads it into every session — follow it on multi-step work. Launch OpenCode from `l2e-runnable/` and restart the session after changing `opencode.json`/`.opencode/`.
 
 ## Intentional quirks — don't "fix" these
 
@@ -64,3 +65,4 @@ Every session must leave this file smarter, so the same mistakes are never made 
 **2026-09-18 — provider swap (AgentRouter → OpenCode Go)**
 - Stage 4 now uses OpenCode Go: `OPENCODE_GO_API_KEY` / `OPENCODE_GO_MODEL` (default `glm-5.3-flash`) / `OPENCODE_GO_BASE_URL` (default `https://opencode.ai/zen/go/v1`), key via Zen console at `https://opencode.ai/auth`. Same 5-file coupling as the 2026-09-11 entry; `lib/copywriter.py` keeps the OpenAI SDK (`_call_agentrouter()` → `_call_opencode_go()`, contract unchanged). Endpoint verified in live `https://opencode.ai/docs/go` (chat/completions, `@ai-sdk/openai-compatible`); SDK base omits the trailing `/chat/completions`.
 - Verify Go swaps with mocked `OpenAI` (patch `lib.copywriter.OpenAI`: JSON round-trip, base_url/model/messages shape, non-JSON fallback, missing-key `RuntimeError`), not live calls — the shell env may already export a key even when `.env` doesn't have it, so force `OPENCODE_GO_API_KEY=dummy-test-key` in-process for deterministic results.
+- Go requires every client request to send `x-opencode-session` (a stable per-conversation id) and a real client `User-Agent`; omit them and Stage 4 dies with `400 MissingSessionID` ("cannot be routed efficiently") before the gate. `lib/copywriter.py` generates a random uuid session id at import and passes both via the SDK's `extra_headers` — keep them on any future provider/client edit.
