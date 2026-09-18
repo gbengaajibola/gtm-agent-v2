@@ -29,7 +29,7 @@ Nobody on the team spends their Friday writing community updates anymore.
 
 ## Want to run your own?
 
-You'll need Python, a Discord server you control, and an API key for the AI that does the writing ([AgentRouter](https://agentrouter.org/console/token)).
+You'll need Python, a Discord server you control, and an API key for the AI that does the writing (OpenCode Go subscription via Zen console (https://opencode.ai/auth)).
 
 1. **Get the code and install what it needs:**
    ```
@@ -38,7 +38,7 @@ You'll need Python, a Discord server you control, and an API key for the AI that
    ```
    The setup check tells you plainly what's missing — it won't fail just because you're not done yet.
 
-2. **Copy `.env.example` to `.env`** and fill in your four keys: the Discord bot token, your two channel IDs (one private for review, one public for posting), and the AgentRouter key.
+2. **Copy `.env.example` to `.env`** and fill in your four keys: the Discord bot token, your two channel IDs (one private for review, one public for posting), and the OpenCode Go key.
 
 3. **Try one run:**
    ```
@@ -50,7 +50,7 @@ You'll need Python, a Discord server you control, and an API key for the AI that
    ```
    (use whatever run ID it printed — one per week). If you don't like it, say `reject` and nothing gets posted.
 
-4. **Let it run itself.** Add the same four keys as secrets on GitHub (Settings → Secrets and variables → Actions), and switch on "Read and write permissions" under Settings → Actions → General. From then on, GitHub runs it every Friday morning, and you can approve or reject drafts right from the GitHub app on your phone.
+4. **Let it run itself.** Add the same four keys as repo secrets on GitHub (Settings → Secrets and variables → Actions: DISCORD_BOT_TOKEN, DISCORD_REVIEW_CHANNEL_ID, DISCORD_PUBLIC_CHANNEL_ID, OPENCODE_GO_API_KEY (+ optional OPENCODE_GO_MODEL)), and switch on "Read and write permissions" under Settings → Actions → General. From then on, GitHub runs it every Friday morning, and you can approve or reject drafts right from the GitHub app on your phone.
 
 ## The honest state of things
 

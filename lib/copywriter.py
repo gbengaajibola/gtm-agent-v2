@@ -1,7 +1,7 @@
 """
 Stage 4 — generate copy. This is intentionally a plain
-generate(prompt) -> text function underneath — _call_agentrouter() speaks
-to the AgentRouter OpenAI-compatible gateway (default model glm-5.3).
+generate(prompt) -> text function underneath — _call_opencode_go() speaks
+to the OpenCode Go OpenAI-compatible gateway (default model glm-5.3-flash).
 Nothing upstream or downstream cares which provider answers, only that
 generate_drafts() returns {"whatsapp": str, "discord": str}.
 """
@@ -28,17 +28,17 @@ def _build_user_message(selection: list[dict], run_mode: str) -> str:
     return json.dumps(payload, indent=2)
 
 
-def _call_agentrouter(system_prompt: str, user_message: str) -> str:
-    """Call the AgentRouter OpenAI-compatible chat-completions endpoint."""
-    if not config.AGENTROUTER_API_KEY:
-        raise RuntimeError("AGENTROUTER_API_KEY is not set — see .env.example")
+def _call_opencode_go(system_prompt: str, user_message: str) -> str:
+    """Call the OpenCode Go OpenAI-compatible chat-completions endpoint."""
+    if not config.OPENCODE_GO_API_KEY:
+        raise RuntimeError("OPENCODE_GO_API_KEY is not set — see .env.example")
 
     client = OpenAI(
-        api_key=config.AGENTROUTER_API_KEY,
-        base_url=config.AGENTROUTER_BASE_URL,
+        api_key=config.OPENCODE_GO_API_KEY,
+        base_url=config.OPENCODE_GO_BASE_URL,
     )
     resp = client.chat.completions.create(
-        model=config.AGENTROUTER_MODEL,
+        model=config.OPENCODE_GO_MODEL,
         max_tokens=1000,
         messages=[
             {"role": "system", "content": system_prompt},
@@ -57,7 +57,7 @@ def generate_drafts(feature_set: list[dict], run_mode: str) -> dict:
     system_prompt = config.SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
     user_message = _build_user_message(feature_set, run_mode)
 
-    raw = _call_agentrouter(system_prompt, user_message)
+    raw = _call_opencode_go(system_prompt, user_message)
 
     try:
         drafts = json.loads(raw)

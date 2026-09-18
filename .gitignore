@@ -6,3 +6,5 @@ output/*.png
 # Local review copies — spike plan/eval, never pushed
 PLAN_STAGE4_OPENAI_SDK.md
 EVAL_STAGE4_OPENAI_SDK.md
+.opencode
+opecode.json

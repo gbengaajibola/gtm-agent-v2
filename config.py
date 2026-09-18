@@ -23,10 +23,10 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
 DISCORD_REVIEW_CHANNEL_ID = os.getenv("DISCORD_REVIEW_CHANNEL_ID", "")
 DISCORD_PUBLIC_CHANNEL_ID = os.getenv("DISCORD_PUBLIC_CHANNEL_ID", "")
 
-# --- LLM provider for Stage 4 (AgentRouter OpenAI-compatible gateway; see lib/copywriter.py) ---
-AGENTROUTER_API_KEY = os.getenv("AGENTROUTER_API_KEY", "")
-AGENTROUTER_MODEL = os.getenv("AGENTROUTER_MODEL", "glm-5.3")
-AGENTROUTER_BASE_URL = os.getenv("AGENTROUTER_BASE_URL", "https://agentrouter.org/v1")
+# --- LLM provider for Stage 4 (OpenCode Go OpenAI-compatible gateway; see lib/copywriter.py) ---
+OPENCODE_GO_API_KEY = os.getenv("OPENCODE_GO_API_KEY", "")
+OPENCODE_GO_MODEL = os.getenv("OPENCODE_GO_MODEL", "glm-5.3-flash")
+OPENCODE_GO_BASE_URL = os.getenv("OPENCODE_GO_BASE_URL", "https://opencode.ai/zen/go/v1")
 
 # --- Copy content ---
 WEEKLY_RESET_DAY = os.getenv("WEEKLY_RESET_DAY", "Friday")
@@ -50,6 +50,6 @@ def missing_secrets():
         "DISCORD_BOT_TOKEN": DISCORD_BOT_TOKEN,
         "DISCORD_REVIEW_CHANNEL_ID": DISCORD_REVIEW_CHANNEL_ID,
         "DISCORD_PUBLIC_CHANNEL_ID": DISCORD_PUBLIC_CHANNEL_ID,
-        "AGENTROUTER_API_KEY": AGENTROUTER_API_KEY,
+        "OPENCODE_GO_API_KEY": OPENCODE_GO_API_KEY,
     }
     return [k for k, v in required.items() if not v]
