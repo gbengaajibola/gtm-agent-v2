@@ -2,6 +2,10 @@
 
 All code lives in `l2e-runnable/` — a flat Python 3.9+ pipeline (scripts + `lib/`), with no test suite, lint, or typecheck config. Run all commands from inside that directory. Paths below are relative to `l2e-runnable/`.
 
+## Hard rule — no unsolicited code edits
+
+Do **not** edit, create, or delete any **code** file (scripts, `lib/`, `config.py`, `requirements.txt`, `.github/workflows/`, etc.) unless the operator explicitly asks for that change in their message, or you ask first and the operator approves. When you believe a code change is needed, **propose it and wait** — never apply it on your own initiative. This overrides every "fix once", self-heal, or autonomous-loop instruction in this repo. The AGENTS.md learnings log is exempt — its self-healing rule below stands as written. Read-only investigation, running tests, and running the existing pipeline commands are always allowed.
+
 ## Commands
 
 ```bash
@@ -16,7 +20,7 @@ There is no test suite. Verification = `python setup_check.py` plus a manual `ru
 
 ## Autonomous loop
 
-To run the whole cycle end to end in auto mode (preflight → sweep → produce → review → decide → verify, with subagent call map), follow `WORKFLOW_LOOP.md`. It is written env-agnostically so any agent (OpenCode, Claude, Cursor, Copilot, …) can execute it. Approval policy lives there: `AUTO_APPROVE` is on by default — a human owns the gate unless the operator explicitly enables it.
+To run the whole cycle end to end in auto mode (preflight → sweep → produce → review → decide → verify, with subagent call map), follow `WORKFLOW_LOOP.md`. It is written env-agnostically so any agent (OpenCode, Claude, Cursor, Copilot, …) can execute it. Approval policy lives there: `AUTO_APPROVE` is **off** by default — a human owns the gate unless the operator explicitly enables it.
 
 ## How the pipeline works (easy to get wrong)
 
@@ -66,3 +70,7 @@ Every session must leave this file smarter, so the same mistakes are never made 
 - Stage 4 now uses OpenCode Go: `OPENCODE_GO_API_KEY` / `OPENCODE_GO_MODEL` (default `glm-5.3-flash`) / `OPENCODE_GO_BASE_URL` (default `https://opencode.ai/zen/go/v1`), key via Zen console at `https://opencode.ai/auth`. Same 5-file coupling as the 2026-09-11 entry; `lib/copywriter.py` keeps the OpenAI SDK (`_call_agentrouter()` → `_call_opencode_go()`, contract unchanged). Endpoint verified in live `https://opencode.ai/docs/go` (chat/completions, `@ai-sdk/openai-compatible`); SDK base omits the trailing `/chat/completions`.
 - Verify Go swaps with mocked `OpenAI` (patch `lib.copywriter.OpenAI`: JSON round-trip, base_url/model/messages shape, non-JSON fallback, missing-key `RuntimeError`), not live calls — the shell env may already export a key even when `.env` doesn't have it, so force `OPENCODE_GO_API_KEY=dummy-test-key` in-process for deterministic results.
 - Go requires every client request to send `x-opencode-session` (a stable per-conversation id) and a real client `User-Agent`; omit them and Stage 4 dies with `400 MissingSessionID` ("cannot be routed efficiently") before the gate. `lib/copywriter.py` generates a random uuid session id at import and passes both via the SDK's `extra_headers` — keep them on any future provider/client edit.
+
+**2026-09-18 — Discord gate 404 / empty-draft hole**
+- A Discord `404 Unknown Channel` on `POST /channels/<id>/messages` almost always means the value in `.env` is not a usable channel id (Discord returns 404, not 403, when the bot can't see it). Diagnose with `GET /users/@me` (token valid + bot id), `GET /users/@me/guilds` (is the bot invited?), then `GET /guilds/<guild_id>/channels` (lists real channel ids). Common mistake: pasting the **guild/server** id into `DISCORD_REVIEW_CHANNEL_ID`/`DISCORD_PUBLIC_CHANNEL_ID`; both must be distinct channel ids.
+- An empty (or whitespace) Stage 4 completion used to silently produce `{"whatsapp":"","discord":""}` and open a gate with nothing postable. `lib/copywriter.py` now raises `RuntimeError` on empty content so `run_weekly.py` exits 1 **before** the gate, matching the documented Stage 4 failure path.

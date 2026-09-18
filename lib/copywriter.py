@@ -69,6 +69,11 @@ def generate_drafts(feature_set: list[dict], run_mode: str) -> dict:
 
     raw = _call_opencode_go(system_prompt, user_message)
 
+    if not raw or not raw.strip():
+        # A transient empty completion must fail loudly so run_weekly aborts
+        # before the gate — never open a review gate with nothing postable.
+        raise RuntimeError("Stage 4 returned empty content — nothing to draft")
+
     try:
         drafts = json.loads(raw)
     except json.JSONDecodeError:
