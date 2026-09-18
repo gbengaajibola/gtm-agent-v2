@@ -1,5 +1,20 @@
 [
   {
+    "project_id": "live-video-website",
+    "title": "Live Video Website",
+    "builder_name": "Omare",
+    "builder_handle": "@omare",
+    "description": "Exploration of a design concept",
+    "category": "Design & UI/UX",
+    "status": "In Progress",
+    "tech_tags": [],
+    "demo_url": "https://newjeans22.base44.app",
+    "code_url": null,
+    "internal_url": "/projects/live-video-website",
+    "comment_count": 0,
+    "vote_count": 0
+  },
+  {
     "project_id": "voxsign",
     "title": "VOXSIGN",
     "builder_name": "yvette_cole",
