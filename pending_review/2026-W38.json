@@ -1,0 +1,64 @@
+{
+  "run_id": "2026-W38",
+  "run_mode": "new_build",
+  "selection": [
+    {
+      "project_id": "inspirational-women",
+      "title": "Inspirational Women",
+      "builder_name": "Omare",
+      "builder_handle": "@omare",
+      "description": "Design project",
+      "category": "Design & UI/UX",
+      "status": "Shipped",
+      "tech_tags": [
+        "Typescript",
+        "Javascript"
+      ],
+      "demo_url": "https://lumen-women.vercel.app/",
+      "code_url": "https://github.com/Omare002/lumina-women.git",
+      "internal_url": "/projects/inspirational-women",
+      "comment_count": 0,
+      "vote_count": 10
+    },
+    {
+      "project_id": "stay-in-touch",
+      "title": "Stay In Touch",
+      "builder_name": "pink panther",
+      "builder_handle": "@teni",
+      "description": "Because 'I'll text them later' never works.",
+      "category": "AI & Machine Learning",
+      "status": "Prototype",
+      "tech_tags": [],
+      "demo_url": "https://stay-in-touch-kit.lovable.app/",
+      "code_url": null,
+      "internal_url": "/projects/stay-in-touch",
+      "comment_count": 0,
+      "vote_count": 6
+    },
+    {
+      "project_id": "nextrole-ng",
+      "title": "NextRole NG",
+      "builder_name": "maadandev",
+      "builder_handle": "@maadandev",
+      "description": "Full-Stack AI CV Optimization Tool",
+      "category": "AI & Machine Learning",
+      "status": "Shipped",
+      "tech_tags": [
+        "React",
+        "Postgres",
+        "TailwindCSS"
+      ],
+      "demo_url": "https://www.nextroleng.tech/",
+      "code_url": null,
+      "internal_url": "/projects/nextrole-ng",
+      "comment_count": 0,
+      "vote_count": 6
+    }
+  ],
+  "drafts": {
+    "whatsapp": "Be honest \u2014 you said \"I'll text them later\" about three people this week and haven't opened the chat since. @teni built an app about exactly that: Stay In Touch sets a rhythm of calls and reminders for the relationships you actually care about. Also new this week: @omare's Inspirational Women, a gallery tribute to the people whose discipline changed how he spends his days. And @maadandev's NextRole NG skips the fake CV scores and tells you what Nigerian recruiters really see when they read yours. Fresh builds are live on the LearnToEarn Leaderboard (l2e.lovable.app) \u2014 go try one and drop your vote, because the board resets Friday.",
+    "discord": "Quick one before the week runs away from you.\n\nThree new builds just landed on the LearnToEarn Leaderboard (l2e.lovable.app):\n\n**Stay In Touch** by @teni \u2014 built on the honest premise that \"I'll text them later\" never works. It sets a call and visit rhythm for each relationship, so the people who matter stop slipping down your list.\n\n**Inspirational Women** by @omare \u2014 a design project that opens like a gallery: Volume I, 2026, women whose discipline and mindset changed how he decides to spend his days. Leila Hormozi on discipline is the first room. Worth entering just for the typography.\n\n**NextRole NG** by @maadandev \u2014 a full-stack AI CV tool for the Nigerian job market. Most optimizers hand you a fake 90% score and wish you luck; this one tells you what a recruiter actually sees \u2014 \"high-risk hire\" \u2014 and shows you exactly what to fix.\n\nGo try one and cast your vote this week \u2014 the leaderboard resets Friday."
+  },
+  "created_at": "2026-09-18T11:08:31.628431Z",
+  "reminder_sent": false
+}
