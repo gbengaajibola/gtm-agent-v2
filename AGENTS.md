@@ -2,6 +2,10 @@
 
 All code lives in `l2e-runnable/` — a flat Python 3.9+ pipeline (scripts + `lib/`), with no test suite, lint, or typecheck config. Run all commands from inside that directory. Paths below are relative to `l2e-runnable/`.
 
+## Hard rule — no unsolicited code edits
+
+Do **not** edit, create, or delete any **code** file (scripts, `lib/`, `config.py`, `requirements.txt`, `.github/workflows/`, etc.) unless the operator explicitly asks for that change in their message, or you ask first and the operator approves. When you believe a code change is needed, **propose it and wait** — never apply it on your own initiative. This overrides every "fix once", self-heal, or autonomous-loop instruction in this repo. The AGENTS.md learnings log is exempt — its self-healing rule below stands as written. Read-only investigation, running tests, and running the existing pipeline commands are always allowed.
+
 ## Commands
 
 ```bash
@@ -16,7 +20,7 @@ There is no test suite. Verification = `python setup_check.py` plus a manual `ru
 
 ## Autonomous loop
 
-To run the whole cycle end to end in auto mode (preflight → sweep → produce → review → decide → verify, with subagent call map), follow `WORKFLOW_LOOP.md`. It is written env-agnostically so any agent (OpenCode, Claude, Cursor, Copilot, …) can execute it. Approval policy lives there: `AUTO_APPROVE` is on by default — a human owns the gate unless the operator explicitly enables it.
+To run the whole cycle end to end in auto mode (preflight → sweep → produce → review → decide → verify, with subagent call map), follow `WORKFLOW_LOOP.md`. It is written env-agnostically so any agent (OpenCode, Claude, Cursor, Copilot, …) can execute it. Approval policy lives there: `AUTO_APPROVE` is **off** by default — a human owns the gate unless the operator explicitly enables it.
 
 ## How the pipeline works (easy to get wrong)
 
@@ -24,9 +28,10 @@ To run the whole cycle end to end in auto mode (preflight → sweep → produce 
 - Selection (`lib/ledger.py`): CAP=3 fixed. Prefer never-featured (oldest-first FIFO — extractor returns newest-first, so the code reverses) → most-improved (vote-count delta vs previous `output/roster_*.json`) → `none` (no post). A project is retired forever after one `most_improved` featuring. `featured_log.json` is only written on approve.
 - State is entirely file-based and git-committed after every writing step via `lib/git_ops.py`: `featured_log.json` (ledger), `output/roster_*.json` snapshots, `pending_review/<run_id>.json` → `processed/<run_id>_{approved,rejected,timed_out}.json`. Git failures (or no git repo at all) are non-fatal by design — scripts warn and continue. `output/*.png` screenshots are gitignored; `.env` is never committed.
 - All tuning constants live in `config.py` (CAP, REMINDER_AFTER_HOURS, TIMEOUT_AFTER_HOURS, paths, env loading) — no magic numbers anywhere else for those. Importing `config` creates `output/`, `pending_review/`, `processed/` as a side effect.
-- Secrets come from `.env` (never committed; see `.env.example`): `DISCORD_BOT_TOKEN`, `DISCORD_REVIEW_CHANNEL_ID`, `DISCORD_PUBLIC_CHANNEL_ID`, `AGENTROUTER_API_KEY` (Stage 4; model via `AGENTROUTER_MODEL`, default `glm-5.3`).
+- Secrets come from `.env` (never committed; see `.env.example`): `DISCORD_BOT_TOKEN`, `DISCORD_REVIEW_CHANNEL_ID`, `DISCORD_PUBLIC_CHANNEL_ID`, `OPENCODE_GO_API_KEY` (Stage 4; model via `OPENCODE_GO_MODEL`, default `glm-5.3-flash`).
 - Approve posts the Discord draft to the public channel and saves the WhatsApp draft to `processed/<run_id>_whatsapp_draft.txt` for manual paste — there is no WhatsApp send API, don't add one.
 - To test the reminder/timeout flow without waiting real hours, temporarily lower `REMINDER_AFTER_HOURS` / `TIMEOUT_AFTER_HOURS` in `config.py`, then run `check_pending.py`.
+- Subagent routing: `.opencode/SUBAGENT_ROUTING.md` is the delegation protocol (`@planner` → `@executor` → `@evaluator`, models, fallback sentinels) and `opencode.json` loads it into every session — follow it on multi-step work. Launch OpenCode from `l2e-runnable/` and restart the session after changing `opencode.json`/`.opencode/`.
 
 ## Intentional quirks — don't "fix" these
 
@@ -60,3 +65,19 @@ Every session must leave this file smarter, so the same mistakes are never made 
 **2026-09-15 — AgentRouter 401 / setup_check venv gotcha**
 - `setup_check.py`'s browser check (line 45) shells out to the bare `playwright` executable and runs *before* the secrets check, so it must be run as `PATH=.venv/bin:$PATH .venv/bin/python setup_check.py` — otherwise it dies with `FileNotFoundError` before printing anything useful.
 - A Stage 4 `401 {"message":"UNAUTHENTICATED","type":"unauthorized_client_error"}` ("unauthorized client detected") is a key/account problem, not a code bug: don't touch `lib/copywriter.py` or the base URL and don't retry — the operator must rotate/refresh `AGENTROUTER_API_KEY`. Nothing is posted and no `pending_review/` gate file is written. (2026-09-15 subagent audit: the `.env` key parses clean — 51 chars, `sk-` prefix, no whitespace/quotes/BOM, byte-exact vs file — so don't re-audit `.env` formatting on this error; mocked-`requests.post` tests of `generate_drafts()` all pass, the code path is fine.)
+
+**2026-09-18 — provider swap (AgentRouter → OpenCode Go)**
+- Stage 4 now uses OpenCode Go: `OPENCODE_GO_API_KEY` / `OPENCODE_GO_MODEL` (default `glm-5.3-flash`) / `OPENCODE_GO_BASE_URL` (default `https://opencode.ai/zen/go/v1`), key via Zen console at `https://opencode.ai/auth`. Same 5-file coupling as the 2026-09-11 entry; `lib/copywriter.py` keeps the OpenAI SDK (`_call_agentrouter()` → `_call_opencode_go()`, contract unchanged). Endpoint verified in live `https://opencode.ai/docs/go` (chat/completions, `@ai-sdk/openai-compatible`); SDK base omits the trailing `/chat/completions`.
+- Verify Go swaps with mocked `OpenAI` (patch `lib.copywriter.OpenAI`: JSON round-trip, base_url/model/messages shape, non-JSON fallback, missing-key `RuntimeError`), not live calls — the shell env may already export a key even when `.env` doesn't have it, so force `OPENCODE_GO_API_KEY=dummy-test-key` in-process for deterministic results.
+- Go requires every client request to send `x-opencode-session` (a stable per-conversation id) and a real client `User-Agent`; omit them and Stage 4 dies with `400 MissingSessionID` ("cannot be routed efficiently") before the gate. `lib/copywriter.py` generates a random uuid session id at import and passes both via the SDK's `extra_headers` — keep them on any future provider/client edit.
+
+**2026-09-18 — Discord gate 404 / empty-draft hole**
+- A Discord `404 Unknown Channel` on `POST /channels/<id>/messages` almost always means the value in `.env` is not a usable channel id (Discord returns 404, not 403, when the bot can't see it). Diagnose with `GET /users/@me` (token valid + bot id), `GET /users/@me/guilds` (is the bot invited?), then `GET /guilds/<guild_id>/channels` (lists real channel ids). Common mistake: pasting the **guild/server** id into `DISCORD_REVIEW_CHANNEL_ID`/`DISCORD_PUBLIC_CHANNEL_ID`; both must be distinct channel ids.
+- An empty (or whitespace) Stage 4 completion used to silently produce `{"whatsapp":"","discord":""}` and open a gate with nothing postable. `lib/copywriter.py` now raises `RuntimeError` on empty content so `run_weekly.py` exits 1 **before** the gate, matching the documented Stage 4 failure path.
+
+**2026-09-18 — gate file omits Stage 2 capture text; reviewers must check `output/*.png`**
+- `pending_review/<run_id>.json` persists only `selection` (roster descriptions) — it drops the Stage 2 `captured_detail`, which Stage 4 *does* receive (`lib/copywriter.py:29`, first 400 chars of the live page). To judge criterion (f), a Phase 3 reviewer must cross-check the Stage 2 screenshot `output/<project_id>.png` (or the live demo_url); the gate file alone can neither confirm nor refute specifics.
+- This is not a false-positive generator: in W38 the reviewer checked `nextrole-ng.png` and confirmed the drafts' "fake 90% score" and "schedules calls and visits" were genuinely absent from the capture. Screenshots are first viewport only (`capture.py:27`, `full_page=False`), so absence there is not proof for below-the-fold copy — check the live page before declaring fabrication. Persist the capture text in the gate file only if this becomes a recurring review bottleneck.
+
+**2026-09-18 — git_ops "nothing to commit" check misses Git 2.53 wording**
+- `lib/git_ops.py:20` treats a commit as success only if stdout/stderr contains `"nothing to commit"`. Git 2.53 instead prints `no changes added to commit (use "git add" ...)`, so a state-neutral commit (e.g. re-created roster byte-identical to HEAD) logs a spurious `[git_ops] commit failed:` with empty stderr. Harmless — the pipeline continues and later commits still land (W38: roster no-op failed, pending commit `5e57e0c` succeeded). Fix would be to also match `no changes added to commit` / check `git diff --cached --quiet`.

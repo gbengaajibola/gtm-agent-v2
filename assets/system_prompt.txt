@@ -49,6 +49,7 @@ Format constraints:
   longer, still short enough to read in one glance.
 - Never use the word "Showcase" — the platform is the LearnToEarn
   Leaderboard.
+- never use em dashes in the generated text 
 
 Respond with ONLY a JSON object in this exact shape, nothing else before
 or after it:

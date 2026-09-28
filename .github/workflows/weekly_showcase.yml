@@ -38,8 +38,8 @@ jobs:
       DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
       DISCORD_REVIEW_CHANNEL_ID: ${{ secrets.DISCORD_REVIEW_CHANNEL_ID }}
       DISCORD_PUBLIC_CHANNEL_ID: ${{ secrets.DISCORD_PUBLIC_CHANNEL_ID }}
-      AGENTROUTER_API_KEY: ${{ secrets.AGENTROUTER_API_KEY }}
-      AGENTROUTER_MODEL: ${{ secrets.AGENTROUTER_MODEL }}
+      OPENCODE_GO_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+      OPENCODE_GO_MODEL: ${{ secrets.OPENCODE_GO_MODEL }}
     steps:
       - uses: actions/checkout@v4
 

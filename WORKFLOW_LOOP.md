@@ -3,7 +3,7 @@
 Any coding agent (OpenCode, Claude, Cursor, Copilot, …) can execute the full
 weekly-showcase cycle by following this file top to bottom in **auto mode**:
 no interactive prompts, decide from files, stop-and-report only where listed.
-run on **auto Approve**
+Approval policy: `AUTO_APPROVE` **OFF** — a human owns the gate (see Phase 4).
 Run everything with cwd = `l2e-runnable/`.
 
 ## The loop
